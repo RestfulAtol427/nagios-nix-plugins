@@ -15,12 +15,6 @@ class checkproxmoxapi:
         self.connection = None
         requests.packages.urllib3.disable_warnings()
 
-    def apiconnect(self):
-        try:
-            self.connection = requests.get((self.proxbaseurl), headers=self.headers, verify=False)
-        except:
-            print("Issue connecting to Proxmox at {0} with API token {2}".format(self.proxbaseurl, self.apitoken))
-
     def getvmdata(self,vmid,pveinstance):
         return requests.get(("{0}nodes/{1}/qemu/{2}/rrddata?timeframe=hour".format(self.proxbaseurl,pveinstance,vmid)), headers=self.headers, verify=False)
     
@@ -69,19 +63,19 @@ def main():
     parser_lxc = subparsers.add_parser('lxc')
 
     parser_pve.add_argument('-p', '--pve', required=True, help='The name of the Proxmox server you wish to monitor.')
-    parser_pve.add_argument('-m', '--metric', required=True, choices=['cpu', 'memory', 'netin', 'netout', 'swapused', 'iowait', 'loadavg', 'rootused'], help='The metric you would like to pull from the VM')
+    parser_pve.add_argument('-m', '--metric', required=True, choices=['cpu', 'memused', 'netin', 'netout', 'swapused', 'iowait', 'loadavg', 'rootused'], help='The metric you would like to pull from the Proxmox server')
     parser_pve.add_argument('-w', '--warning', required=False, type=int, help='The warning value threshold. If the metric exceeds this value, a warning will be thrown.')
     parser_pve.add_argument('-c', '--critical', required=False, type=int, help='The critical value threshold. If the metric exceeds this value, a critical will be thrown.')
 
     parser_lxc.add_argument('-p', '--pve', required=True, help='The name of the Proxmox server where the LXC is running.')
     parser_lxc.add_argument('-i', '--lxcid', required=True, help='The Proxmox ID of the LXC you wish to monitor. E.g. 100')
-    parser_lxc.add_argument('-m', '--metric', required=True, choices=['cpu', 'memory', 'diskread', 'diskwrite', 'netin', 'netout'], help='The metric you would like to pull from the LXC')
+    parser_lxc.add_argument('-m', '--metric', required=True, choices=['cpu', 'mem', 'diskread', 'diskwrite', 'netin', 'netout'], help='The metric you would like to pull from the LXC')
     parser_lxc.add_argument('-w', '--warning', required=False, type=int, help='The warning value threshold. If the metric exceeds this value, a warning will be thrown.')
     parser_lxc.add_argument('-c', '--critical', required=False, type=int, help='The critical value threshold. If the metric exceeds this value, a critical will be thrown.')
 
     parser_vm.add_argument('-p', '--pve', required=True, help='The name of the Proxmox server where the VM is running.')
     parser_vm.add_argument('-i', '--vmid', required=True, help='The Proxmox ID of the VM you wish to monitor. E.g. 100')
-    parser_vm.add_argument('-m', '--metric', required=True, choices=['cpu', 'memory', 'diskread', 'diskwrite', 'netin', 'netout'], help='The metric you would like to pull from the VM')
+    parser_vm.add_argument('-m', '--metric', required=True, choices=['cpu', 'mem', 'diskread', 'diskwrite', 'netin', 'netout'], help='The metric you would like to pull from the VM')
     parser_vm.add_argument('-w', '--warning', required=False, type=int, help='The warning value threshold. If the metric exceeds this value, a warning will be thrown.')
     parser_vm.add_argument('-c', '--critical', required=False, type=int, help='The critical value threshold. If the metric exceeds this value, a critical will be thrown.')
 
@@ -98,52 +92,17 @@ def main():
         pass
     
     elif (parsedargs.toplvl == 'pve'):
-        if (parsedargs.metric == 'cpu'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['cpu']),2)
-        elif (parsedargs.metric == 'memory'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['memused']),2)
-        elif (parsedargs.metric == 'iowait'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['iowait']),2)
-        elif (parsedargs.metric == 'swapused'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['swapused']),2)
-        elif (parsedargs.metric == 'rootused'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['rootused']),2)
-        elif (parsedargs.metric == 'netin'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['netin']),2)
-        elif (parsedargs.metric == 'netout'):
-            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69]['netout']),2)
+        myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
 
         metricdata = checkmetric(parsedargs.metric,myresults)
 
     elif (parsedargs.toplvl == 'lxc'):
-        if (parsedargs.metric == 'cpu'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['cpu']),2)
-        elif (parsedargs.metric == 'memory'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['mem']),2)
-        elif (parsedargs.metric == 'diskread'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['diskread']),2)
-        elif (parsedargs.metric == 'diskwrite'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['diskwrite']),2)
-        elif (parsedargs.metric == 'netin'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['netin']),2)
-        elif (parsedargs.metric == 'netout'):
-            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69]['netout']),2)
+        myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
 
         metricdata = checkmetric(parsedargs.metric,myresults)
 
     elif (parsedargs.toplvl == 'vm'):
-        if (parsedargs.metric == 'cpu'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['cpu']),2)
-        elif (parsedargs.metric == 'memory'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['mem']),2)
-        elif (parsedargs.metric == 'diskread'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['diskread']),2)
-        elif (parsedargs.metric == 'diskwrite'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['diskwrite']),2)
-        elif (parsedargs.metric == 'netin'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['netin']),2)
-        elif (parsedargs.metric == 'netout'):
-            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69]['netout']),2)
+        myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
 
         metricdata = checkmetric(parsedargs.metric,myresults)
 
