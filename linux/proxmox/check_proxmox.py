@@ -11,7 +11,7 @@ class checkproxmoxapi:
         self.apitoken = apitoken
         self.oauthname = oauthname
         self.user = user
-        self.headers = {'Content-Type': 'application/json','Authorization': "PVEAPIToken={0}!{1}={2}".format(self.user, self.oauthname, self.apitoken)}
+        self.headers = {'Content-Type': 'x-www-form-urlencoded','Authorization': "PVEAPIToken={0}!{1}={2}".format(self.user, self.oauthname, self.apitoken)}
         self.connection = None
         requests.packages.urllib3.disable_warnings()
 
