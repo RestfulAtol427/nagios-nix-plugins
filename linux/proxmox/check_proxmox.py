@@ -28,20 +28,56 @@ def checkmetric(metric,curvalue,warn=None,crit=None):
     returndata = {}
     returndata['message'] = 'Unset'
     returndata['exitcode'] = 6
+    returndata['perfdata'] = ''
+    returndata['uom'] = 'unknown'
+
+    match metric:
+        case 'cpu' | 'iowait':
+            returndata['uom'] = 'pct'
+            curvalue = round(curvalue * 100, ndigits=2)
+        case 'mem' | 'memused':
+            returndata['uom'] = 'mebibytes'
+            curvalue = round(curvalue / 1024 / 1024, ndigits=2)
+        case 'netin':
+            returndata['uom'] = 'kibibytes_in'
+            curvalue = round(curvalue / 1024, ndigits=2)
+        case 'netout':
+            returndata['uom'] = 'kibibytes_out'
+            curvalue = round(curvalue / 1024, ndigits=2)
+        case 'swapused':
+            returndata['uom'] = 'mebibytes_used_swap'
+            curvalue = round(curvalue / 1024 / 1024, ndigits=2)
+        case 'loadavg':
+            returndata['uom'] = 'load_avg'
+        case 'rootused':
+            returndata['uom'] = 'mebibytes_used_root'
+            curvalue = round(curvalue / 1024 / 1024, ndigits=2)
+        case 'diskread':
+            returndata['uom'] = 'mebibytes_read'
+            curvalue = round(curvalue / 1024 / 1024, ndigits=2)
+        case 'diskwrite':
+            returndata['uom'] = 'mebibytes_write'
+            curvalue = round(curvalue / 1024 / 1024, ndigits=2)
 
     if (warn is not None):
-        if (metric > int(warn)):
+        if (curvalue > warn):
             returndata['message'] = 'WARNING: {0} is {1}'.format(metric, curvalue)
             returndata['exitcode'] = 1
+    else:
+        warn = ''
 
     if (crit is not None):
-        if (metric > int(crit)):
+        if (curvalue > crit):
             returndata['message'] = 'CRITICAL: {0} is {1}'.format(metric, curvalue)
             returndata['exitcode'] = 2
+    else:
+        crit = ''
     
     if (returndata['exitcode'] == 6):
         returndata['message'] = 'OK: {0} is {1}'.format(metric,curvalue)
         returndata['exitcode'] = 0
+    
+    returndata['perfdata'] = "'{0}'={1}{2};{3};{4}".format(metric, curvalue, returndata['uom'], warn, crit)
     
     return returndata
 
@@ -104,9 +140,9 @@ def main():
     elif (parsedargs.toplvl == 'vm'):
         myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
 
-        metricdata = checkmetric(parsedargs.metric,myresults)
+        metricdata = checkmetric(parsedargs.metric,myresults,parsedargs.warning,parsedargs.critical)
 
-    print(metricdata['message'])
+    print('{0} | {1}'.format(metricdata['message'], metricdata['perfdata']))
     exit(metricdata['exitcode'])
 
 if __name__ == '__main__':
