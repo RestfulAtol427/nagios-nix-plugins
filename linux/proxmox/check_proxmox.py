@@ -17,7 +17,7 @@ class checkproxmoxapi:
 
     def getvmdata(self,vmid,pveinstance):
         return requests.get(("{0}nodes/{1}/qemu/{2}/rrddata?timeframe=hour".format(self.proxbaseurl,pveinstance,vmid)), headers=self.headers, verify=False)
-    
+
     def getlxcdata(self,lxcid,pveinstance):
         return requests.get(("{0}nodes/{1}/lxc/{2}/rrddata?timeframe=hour".format(self.proxbaseurl,pveinstance,lxcid)), headers=self.headers, verify=False)
     
@@ -128,17 +128,29 @@ def main():
         pass
     
     elif (parsedargs.toplvl == 'pve'):
-        myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        try:
+            myresults = round(float(myprox.getpvedata(parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        except KeyError as e:
+            print("Plugin Error: {0}. Setting to UNKNOWN".format(e))
+            exit(3)
 
         metricdata = checkmetric(parsedargs.metric,myresults)
 
     elif (parsedargs.toplvl == 'lxc'):
-        myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        try:
+            myresults = round(float(myprox.getlxcdata(parsedargs.lxcid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        except KeyError as e:
+            print("Plugin Error: {0}. Setting to UNKNOWN".format(e))
+            exit(3)            
 
         metricdata = checkmetric(parsedargs.metric,myresults)
 
     elif (parsedargs.toplvl == 'vm'):
-        myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        try:
+            myresults = round(float(myprox.getvmdata(parsedargs.vmid,parsedargs.pve).json()['data'][69][parsedargs.metric]),2)
+        except KeyError as e:
+            print("Plugin Error: {0}. Setting to UNKNOWN".format(e))
+            exit(3)
 
         metricdata = checkmetric(parsedargs.metric,myresults,parsedargs.warning,parsedargs.critical)
 
